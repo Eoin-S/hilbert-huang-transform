@@ -4,12 +4,13 @@ Created on Mon May  3 17:37:22 2021
 
 @author: ebolger2
 """
-from scipy.signal import hilbert,spectrogram
+from scipy.signal import hilbert, spectrogram
 from scipy.sparse import csr_matrix
 from PyEMD import EMD,EEMD
 from sklearn.preprocessing import MinMaxScaler
 
 import numpy as np
+from skimage.measure import block_reduce
 import numpy.matlib
 
 import pandas as pd
@@ -99,3 +100,38 @@ def hht(imfs,fs,freq_max=None,freq_min=None,FResol=None,MinThres = np.NINF):
                        shape=(len(F),len(T) ))
     
     return T,F,P,insf,inse
+
+def Hilbert_spectrum(s, fs, freq_div = 2, n_components = 4, frequency_resolution = 0.01, freq_min = 0, flatten = True):
+    
+    freq_max = fs/freq_div
+    
+    # decompose signal into imfs and residue
+    emd = EMD(max_imfs=n_components)
+    emd.emd(s)
+    imfs, res = emd.get_imfs_and_residue()
+    n_components = imfs.shape[0] + 2
+    
+    energy = []
+    for n, imf in enumerate( imfs ):
+
+        T, F, P, insf, inse = hht(imf, fs, 
+                                  FResol= frequency_resolution, 
+                                  freq_min = freq_min, 
+                                  freq_max = freq_max)
+        
+        energy.extend([P.toarray()])
+    
+    T, F, P, insf, inse = hht(res, fs, 
+                              FResol= frequency_resolution, 
+                              freq_min = freq_min, 
+                              freq_max = freq_max)
+    energy.extend([P.toarray()])
+    
+    energy = np.dstack(energy)
+    org_shape = energy.shape
+    
+    if flatten:
+        return T, F, block_reduce(energy, block_size=(1, 1, org_shape[2]), 
+                                  func=np.max).reshape(org_shape[0],org_shape[1])
+    else:
+        return T, F, energy

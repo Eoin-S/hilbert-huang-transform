@@ -111,7 +111,7 @@ def Hilbert_spectrum(s, fs, freq_div = 2, n_components = 4, frequency_resolution
     imfs, res = emd.get_imfs_and_residue()
     n_components = imfs.shape[0] + 2
     
-    energy = []
+    energy, raw = [], []
     for n, imf in enumerate( imfs ):
 
         T, F, P, insf, inse = hht(imf, fs, 
@@ -119,19 +119,24 @@ def Hilbert_spectrum(s, fs, freq_div = 2, n_components = 4, frequency_resolution
                                   freq_min = freq_min, 
                                   freq_max = freq_max)
         
+        # plt.scatter(T,insf, c = inse)
+        
         energy.extend([P.toarray()])
+        raw.extend([np.column_stack((T, insf, inse))])
     
     T, F, P, insf, inse = hht(res, fs, 
                               FResol= frequency_resolution, 
                               freq_min = freq_min, 
                               freq_max = freq_max)
     energy.extend([P.toarray()])
+    raw.extend([np.column_stack((T, insf, inse))])
+    # plt.scatter(T,insf, c = inse)
     
     energy = np.dstack(energy)
     org_shape = energy.shape
     
     if flatten:
         return T, F, block_reduce(energy, block_size=(1, 1, org_shape[2]), 
-                                  func=np.max).reshape(org_shape[0],org_shape[1])
+                                  func=np.max).reshape(org_shape[0],org_shape[1]), np.dstack(raw)
     else:
-        return T, F, energy
+        return T, F, energy, np.dstack(raw)

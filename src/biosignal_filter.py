@@ -10,7 +10,7 @@ import pywt
 from scipy import signal
 
 
-def filter_denoise_biowave(y,fs=125,mode='orginal_dc'):
+def denoise_biowave( y, fs = 125, mode = 'orginal_dc' ):
     '''
     This function denoises and filters the inputted biological waveform. It does this 
     my initially upsampling the input signal to 1kHz, (this is done to make the process 
